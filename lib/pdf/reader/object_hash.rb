@@ -289,6 +289,19 @@ class PDF::Reader
       @page_references ||= get_page_objects(root[:Pages]).flatten
     end
 
+    # render the current set of objects into a fresh PDF
+    #
+    def to_s
+      FileWriter.new(self).to_s
+    end
+
+    # save the current set of objects into a fresh PDF and write it to disk
+    #
+    def save(filename)
+      Kernel.const_defined?("Encoding") ? mode = "wb:ASCII-8BIT" : mode = "wb"
+      File.open(filename, mode) { |f| f << self.to_s }
+    end
+
     private
 
     def new_buffer(offset = 0)

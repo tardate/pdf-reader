@@ -370,3 +370,14 @@ describe PDF::Reader::ObjectHash, "page_references method" do
     arr.map { |ref| ref.id }.should eql([4, 7, 10, 13])
   end
 end
+
+describe PDF::Reader::ObjectHash, "to_s method" do
+
+  # only do a superficial test here, detailed testing of saving an ObjectHash
+  # to disk is done via the FileWriter class
+
+  it "should return a rendered PDF from an empty ObjectHash" do
+    h = PDF::Reader::ObjectHash.new
+    h.to_s[0,8].should == "%PDF-1.3"
+  end
+end
