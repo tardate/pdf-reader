@@ -216,7 +216,7 @@ class PDF::Reader
     # can be an int or a PDF::Reader::Reference
     #
     def has_key?(check_key)
-      if check_key.is_af?(PDF::Reader::Reference)
+      if check_key.is_a?(PDF::Reader::Reference)
         keys.include?(check_key)
       else
         keys.any? { |k| k.id == check_key.to_i }
