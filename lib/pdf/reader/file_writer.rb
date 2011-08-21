@@ -22,11 +22,6 @@ class PDF::Reader
       str
     end
 
-    def save_to_disk(filename)
-      Kernel.const_defined?("Encoding") ? mode = "wb:ASCII-8BIT" : mode = "wb"
-      File.open(filename,mode) { |f| f << render }
-    end
-
     private
 
     # Write out the PDF Header, as per spec 3.4.1
