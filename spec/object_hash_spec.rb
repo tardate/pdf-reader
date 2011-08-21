@@ -62,6 +62,34 @@ describe PDF::Reader::ObjectHash, "[] method" do
   end
 end
 
+describe PDF::Reader::ObjectHash, "[]= method" do
+
+  it "should return the new object when an old object is replaced" do
+    filename = pdf_spec_file("cairo-unicode")
+    h = PDF::Reader::ObjectHash.new(filename)
+
+    new_info = {:Producer => "PDF::Reader"}
+
+    info_ref = h.trailer[:Info]
+    begin
+      h[info_ref] = new_info
+    end.should eql(new_info)
+  end
+
+  it "should replace the old version of an object" do
+    filename = pdf_spec_file("cairo-unicode")
+    h = PDF::Reader::ObjectHash.new(filename)
+
+    new_info = {:Producer => "PDF::Reader"}
+
+    info_ref = h.trailer[:Info]
+    h[info_ref] = new_info
+
+    h[info_ref].should eql(new_info)
+  end
+
+end
+
 describe PDF::Reader::ObjectHash, "object method" do
 
   it "should return regular objects unchanged" do

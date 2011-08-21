@@ -51,6 +51,7 @@ class PDF::Reader
       @xref        = PDF::Reader::XRef.new(@io)
       @trailer     = @xref.trailer
       @cache       = PDF::Reader::ObjectCache.new
+      @mem_objects = {}
 
       if trailer[:Encrypt]
         raise ::PDF::Reader::EncryptedPDFError, 'PDF::Reader cannot read encrypted PDF files'
@@ -86,7 +87,9 @@ class PDF::Reader
         unless key.kind_of?(PDF::Reader::Reference)
           key = PDF::Reader::Reference.new(key.to_i, 0)
         end
-        if @cache.has_key?(key)
+        if @mem_objects.has_key?(key)
+          @mem_objects[key]
+        elsif @cache.has_key?(key)
           @cache[key]
         elsif xref[key].is_a?(Fixnum)
           buf = new_buffer(xref[key])
@@ -99,6 +102,22 @@ class PDF::Reader
       rescue InvalidObjectError
         return default
       end
+    end
+
+    def []=(key, val)
+      key = PDF::Reader::Reference.new(key, 0) if key.is_a?(Fixnum)
+
+      if !key.is_a?(PDF::Reader::Reference)
+        raise ArgumentError, "key must be an int or PDF::Reader::Reference"
+      elsif xref[key]
+        @mem_objects[key] = val
+      else
+        raise ArgumentError, "only existing objects can be replaced"
+      end
+    end
+
+    def ref
+
     end
 
     # If key is a PDF::Reader::Reference object, lookup the corresponding
