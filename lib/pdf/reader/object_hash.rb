@@ -34,8 +34,10 @@ class PDF::Reader
     # Creates a new ObjectHash object. input can be a string with a valid filename,
     # a string containing a PDF file, or an IO object.
     #
-    def initialize(input)
-      if input.respond_to?(:seek) && input.respond_to?(:read)
+    def initialize(input = nil)
+      if input.nil?
+        @io = StringIO.new
+      elsif input.respond_to?(:seek) && input.respond_to?(:read)
         @io = input
       elsif File.file?(input.to_s)
         if File.respond_to?(:binread)
@@ -47,11 +49,21 @@ class PDF::Reader
       else
         raise ArgumentError, "input must be an IO-like object or a filename"
       end
-      @pdf_version = read_version
-      @xref        = PDF::Reader::XRef.new(@io)
-      @trailer     = @xref.trailer
+
       @cache       = PDF::Reader::ObjectCache.new
       @mem_objects = {}
+
+      if input
+        @trailer     = @xref.trailer
+        @pdf_version = read_version
+        @xref        = PDF::Reader::XRef.new(@io)
+      else
+        pages        = ref({:Type => :Pages, :Kids => [], :Count => 0})
+        root         = ref({:Type => :Catalog, :Pages => pages})
+        @trailer     = {:Root => root}
+        @pdf_version = 1.3
+        @xref        = {}
+      end
 
       if trailer[:Encrypt]
         raise ::PDF::Reader::EncryptedPDFError, 'PDF::Reader cannot read encrypted PDF files'
@@ -117,8 +129,16 @@ class PDF::Reader
     end
 
     def ref(obj)
-      max_ref = [@xref.last_ref, @mem_objects.keys.sort.last].compact.max
-      new_ref = PDF::Reader::Reference.new(max_ref.id + 1, 0)
+      if @xref.respond_to?(:last_ref)
+        max_ref = [@xref.last_ref, @mem_objects.keys.sort.last].compact.max
+      else
+        max_ref = @mem_objects.keys.sort.last
+      end
+      if max_ref
+        new_ref = PDF::Reader::Reference.new(max_ref.id + 1, 0)
+      else
+        new_ref = PDF::Reader::Reference.new(1, 0)
+      end
       @mem_objects[new_ref] = obj
       new_ref
     end
@@ -157,7 +177,7 @@ class PDF::Reader
     # iterate over each key, value. Just like a ruby hash.
     #
     def each(&block)
-      @xref.each do |ref|
+      keys.each do |ref|
         yield ref, self[ref]
       end
     end
@@ -166,7 +186,7 @@ class PDF::Reader
     # iterate over each key. Just like a ruby hash.
     #
     def each_key(&block)
-      each do |id, obj|
+      keys.each do |id, obj|
         yield id
       end
     end
@@ -182,29 +202,25 @@ class PDF::Reader
     # return the number of objects in the file. An object with multiple generations
     # is counted once.
     def size
-      xref.size
+      keys.size
     end
     alias :length :size
 
     # return true if there are no objects in this file
     #
     def empty?
-      size == 0 ? true : false
+      size == 0
     end
 
     # return true if the specified key exists in the file. key
     # can be an int or a PDF::Reader::Reference
     #
     def has_key?(check_key)
-      # TODO update from O(n) to O(1)
-      each_key do |key|
-        if check_key.kind_of?(PDF::Reader::Reference)
-          return true if check_key == key
-        else
-          return true if check_key.to_i == key.id
-        end
+      if check_key.is_af?(PDF::Reader::Reference)
+        keys.include?(check_key)
+      else
+        keys.any? { |k| k.id == check_key.to_i }
       end
-      return false
     end
     alias :include? :has_key?
     alias :key? :has_key?
@@ -229,8 +245,13 @@ class PDF::Reader
     #
     def keys
       ret = []
-      each_key { |k| ret << k }
-      ret
+      @xref.each do |ref|
+        ret << ref
+      end
+      @mem_objects.keys.each do |ref|
+        ret << ref
+      end
+      ret.uniq.sort
     end
 
     # return an array of all values in the file
