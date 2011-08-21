@@ -87,7 +87,26 @@ describe PDF::Reader::ObjectHash, "[]= method" do
 
     h[info_ref].should eql(new_info)
   end
+end
 
+describe PDF::Reader::ObjectHash, "ref method" do
+
+  it "should return a PDF::Reader::Reference for the new object" do
+    filename = pdf_spec_file("cairo-unicode")
+    h = PDF::Reader::ObjectHash.new(filename)
+
+    obj = {:Some => :Data}
+    h.ref(obj).should eql(PDF::Reader::Reference.new(58, 0))
+  end
+
+  it "should store the object so it can be retrieved later" do
+    filename = pdf_spec_file("cairo-unicode")
+    h = PDF::Reader::ObjectHash.new(filename)
+
+    obj = {:Some => :Data}
+    ref = h.ref(obj)
+    h[ref].should eql(obj)
+  end
 end
 
 describe PDF::Reader::ObjectHash, "object method" do

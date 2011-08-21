@@ -63,6 +63,12 @@ class PDF::Reader
       @xref.size
     end
     ################################################################################
+    def last_ref
+      last_id = @xref.keys.sort.last
+      last_gen = @xref[last_id].keys.sort.last
+      PDF::Reader::Reference.new(last_id, last_gen)
+    end
+    ################################################################################
     # returns the byte offset for the specified PDF object.
     #
     # ref - a PDF::Reader::Reference object containing an object ID and revision number

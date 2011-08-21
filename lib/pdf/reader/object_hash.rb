@@ -116,8 +116,11 @@ class PDF::Reader
       end
     end
 
-    def ref
-
+    def ref(obj)
+      max_ref = [@xref.last_ref, @mem_objects.keys.sort.last].compact.max
+      new_ref = PDF::Reader::Reference.new(max_ref.id + 1, 0)
+      @mem_objects[new_ref] = obj
+      new_ref
     end
 
     # If key is a PDF::Reader::Reference object, lookup the corresponding
