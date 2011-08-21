@@ -54,15 +54,15 @@ class PDF::Reader
       @mem_objects = {}
 
       if input
-        @trailer     = @xref.trailer
-        @pdf_version = read_version
         @xref        = PDF::Reader::XRef.new(@io)
+        @pdf_version = read_version
+        @trailer     = @xref.trailer
       else
+        @xref        = {}
+        @pdf_version = 1.3
         pages        = ref({:Type => :Pages, :Kids => [], :Count => 0})
         root         = ref({:Type => :Catalog, :Pages => pages})
         @trailer     = {:Root => root}
-        @pdf_version = 1.3
-        @xref        = {}
       end
 
       if trailer[:Encrypt]
